@@ -227,7 +227,7 @@ S.onboard = () => {
     <div class="col g8"><h1>Quelles assurances avez-vous ?</h1><p class="lede">Une ligne par police. Avec l’assureur et le numéro, nous demandons les documents pour vous. Vous pouvez aussi le faire plus tard.</p></div>
     <div class="col g10">${rows}<button class="btn btn-dashed" data-act="addRow">${svg('plus',18,2)}Ajouter une ligne</button></div>
     <div class="chips"><span class="note">Ajout rapide :</span>${['vehicule','pj','vie','voyage'].map(id => `<button class="chip sm" data-act="quickRow" data-r="${id}">${esc(R(id).short)}</button>`).join('')}</div>
-    <label class="check"><input type="checkbox" data-bind="draftMandate"${ui.draftMandate?' checked':''}><span>J’autorise UnderControl à demander les documents à mes assureurs en mon nom (mandat de courtage).</span></label>
+    <label class="check"><input type="checkbox" data-bind="draftMandate"${ui.draftMandate?' checked':''}><span>J’autorise UnderControl à demander les documents à mes assureurs en mon nom.</span></label>
     <div class="grow"></div>
     <div class="col g8">
       <button class="btn btn-primary btn-lg" id="onb-go" data-act="finishOnb">${onbLabel()}</button>
@@ -285,7 +285,7 @@ S.add = () => {
       <div class="col g4"><h2 class="sm">Nous demandons les documents</h2><p class="small" style="color:var(--muted)">Indiquez l’assureur et le numéro de police. Vous êtes averti dès que la police arrive.</p></div>
       <div class="field"><label for="ad-ins">Assureur</label><input id="ad-ins" class="input" data-bind="add.insurer" value="${esc(f.insurer)}" placeholder="Ex. Allianz" autocomplete="off"></div>
       <div class="field"><label for="ad-num">N° de police</label><input id="ad-num" class="input mono" data-bind="add.number" value="${esc(f.number)}" placeholder="Ex. 12.345.678" autocomplete="off"></div>
-      <label class="check"><input type="checkbox" data-bind="add.mandate"${f.mandate?' checked':''}><span>J’autorise UnderControl à demander mes documents à cet assureur en mon nom (mandat de courtage).</span></label>
+      <label class="check"><input type="checkbox" data-bind="add.mandate"${f.mandate?' checked':''}><span>J’autorise UnderControl à demander mes documents à cet assureur en mon nom.</span></label>
       ${err}
       <button class="btn btn-primary" type="submit">Envoyer la demande</button>
     </form>
@@ -319,7 +319,7 @@ S.policy = () => {
     state = (p.insurer ? `
       <form class="card" data-submit="requestDocs" novalidate>
         <div class="col g4"><h2 class="sm">Demander les documents</h2><p class="small" style="color:var(--ink-2)">Nous demandons la police à ${esc(p.insurer)} pour vous.</p></div>
-        <label class="check"><input type="checkbox" name="mandate"><span>J’autorise UnderControl à demander mes documents à cet assureur en mon nom (mandat de courtage).</span></label>
+        <label class="check"><input type="checkbox" name="mandate"><span>J’autorise UnderControl à demander mes documents à cet assureur en mon nom.</span></label>
         ${ui.policyError ? `<p class="err" role="alert">${esc(ui.policyError)}</p>` : ''}
         <button class="btn btn-primary" type="submit">Envoyer la demande</button>
       </form>`
@@ -412,7 +412,7 @@ S.bilan = () => {
     ${findings || `<div class="banner">${svg('check',18,2)}<span>Rien à signaler avec les informations actuelles.</span></div>`}
     <h2>Bien couvert</h2>
     ${covered}
-    <p class="note">Ce bilan se base sur les polices enregistrées et vos réponses. Il ne remplace pas le conseil d’un courtier.</p>`;
+    <p class="note">Ce bilan se base sur les polices enregistrées et vos réponses. Un conseiller UnderControl peut l’approfondir avec vous.</p>`;
 };
 
 S.compare = () => {
@@ -423,11 +423,11 @@ S.compare = () => {
     <div class="col g8"><h1>Comparatif</h1><p class="lede">${esc(topic)}</p></div>
     ${ui.params.sent ? `
       <div class="card"><span class="ico ok">${svg('check',20,2.2)}</span><h2 class="sm">Demande enregistrée</h2>
-        <p class="small" style="color:var(--ink-2)">Un courtier préparera des offres pour ce risque.</p>
+        <p class="small" style="color:var(--ink-2)">Un conseiller UnderControl vous prépare des offres pour ce risque.</p>
         <p class="note">Version de test : la demande reste sur ce téléphone.</p>
         <button class="btn btn-secondary" data-act="tab" data-s="bilan">Retour au bilan</button></div>`
     : `
-      <div class="banner">${svg('info',18,2)}<span>Le comparateur en ligne arrive dans une prochaine version. En attendant, demandez un comparatif : un courtier vous répond avec des offres.</span></div>
+      <div class="banner">${svg('info',18,2)}<span>Le comparateur en ligne arrive dans une prochaine version. En attendant, demandez un comparatif : un conseiller UnderControl vous répond avec des offres.</span></div>
       <form class="card" data-submit="compare" novalidate>
         <div class="field"><label for="cp-note">Précisions (facultatif)</label><textarea id="cp-note" name="note" class="input" placeholder="Ex. somme d’assurance souhaitée, franchise, budget"></textarea></div>
         <button class="btn btn-primary" type="submit">Demander un comparatif</button>
@@ -474,8 +474,8 @@ const EVENTS = {
   voyage:['Annulation de voyage','Bagages perdus ou volés','Frais médicaux à l’étranger','Rapatriement','Autre'],
   autre:['Autre']
 };
-const CLAIM_ST = {draft:{l:'Brouillon',c:'warn'}, sent:{l:'Envoyé',c:'req'}, received:{l:'Chez l’assureur',c:'req'}, review:{l:'En examen',c:'req'}, closed:{l:'Clos',c:'ok'}};
-const CLAIM_NEXT = {sent:['received','Transmis à l’assureur par votre courtier'], received:['review','En cours d’examen par l’assureur'], review:['closed','Sinistre clos : décision de l’assureur reçue']};
+const CLAIM_ST = {draft:{l:'Brouillon',c:'warn'}, sent:{l:'Transmis',c:'req'}, received:{l:'Pris en charge',c:'req'}, review:{l:'Chez l’assureur',c:'req'}, closed:{l:'Clos',c:'ok'}};
+const CLAIM_NEXT = {sent:['received','Un conseiller UnderControl a pris votre dossier en charge'], received:['review','Nous avons transmis votre dossier à l’assureur'], review:['closed','Sinistre clos : décision de l’assureur reçue']};
 const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; };
 const fmtISO = s => s ? s.split('-').reverse().join('.') : '—';
 const hhmm = t => { const d = new Date(t); return `${z(d.getHours())}:${z(d.getMinutes())}`; };
@@ -532,9 +532,9 @@ function preAnalysis(c){
   tips.forEach(x => out.push('• ' + x));
   if(!c.files.length) out.push('• Aucun justificatif pour l’instant : ajoutez au moins une photo ou un document.');
   else out.push(`• ${plural(c.files.length, 'justificatif joint', 'justificatifs joints')}.`);
-  if(c.amount) out.push(`• Montant estimé : ${chf(c.amount)}. S’il est proche de votre franchise, la déclaration n’est peut-être pas utile : votre courtier peut vous le dire.`);
+  if(c.amount) out.push(`• Montant estimé : ${chf(c.amount)}. S’il est proche de votre franchise, la déclaration n’est peut-être pas utile : un conseiller UnderControl peut vous le dire.`);
   if((c.desc || '').length < 40) out.push('• Décrivez plus précisément les circonstances : où, quand, comment.');
-  out.push('', 'Analyse automatique de la version de test, à confirmer par votre courtier.');
+  out.push('', 'Analyse automatique de la version de test. Un conseiller UnderControl la vérifie à réception de votre déclaration.');
   return out.join('\n');
 }
 const thumbsHTML = (files, editable) => `<div class="thumbs">${files.map(x => `
@@ -554,7 +554,7 @@ S.claims = () => {
       <div><div class="muted">Suivi et historique</div><h1>Sinistres</h1></div>
       <button class="icon-btn primary" data-act="newClaim" aria-label="Annoncer un sinistre">${svg('plus',20,2.2)}</button>
     </div>
-    ${list.length ? '' : `<div class="card"><h2 class="sm">Aucun sinistre</h2><p class="small" style="color:var(--ink-2)">Vol, dégât d’eau, accident : annoncez-le ici. Alfred vous dit quoi joindre, puis la déclaration part chez votre courtier.</p><button class="btn btn-primary" data-act="newClaim">${svg('alert',18)}Annoncer un sinistre</button></div>`}
+    ${list.length ? '' : `<div class="card"><h2 class="sm">Aucun sinistre</h2><p class="small" style="color:var(--ink-2)">Vol, dégât d’eau, accident : annoncez-le ici. Alfred vous dit quoi faire et quoi joindre, puis votre déclaration nous est transmise.</p><button class="btn btn-primary" data-act="newClaim">${svg('alert',18)}Annoncer un sinistre</button></div>`}
     ${open.length ? `<h2>En cours</h2><div class="list">${open.map(row).join('')}</div>` : ''}
     ${done.length ? `<h2>Historique</h2><div class="list">${done.map(row).join('')}</div>` : ''}`;
 };
@@ -573,7 +573,7 @@ S.claimNew = () => {
   const editing = data.claims.some(c => c.id === f.id);
   return `
     <button class="back" data-act="back">${svg('back',18,2)}${editing ? 'Retour' : 'Sinistres'}</button>
-    <div class="col g8"><h1>${editing ? 'Compléter la déclaration' : 'Annoncer un sinistre'}</h1><p class="lede">Les informations de base suffisent. Alfred vous dit ensuite ce qu’il faut joindre.</p></div>
+    <div class="col g8"><h1>${editing ? 'Compléter la déclaration' : 'Annoncer un sinistre'}</h1><p class="lede">Les informations de base suffisent. Alfred vous dit quoi faire et quoi joindre, puis votre déclaration nous est transmise.</p></div>
     <section class="col g8"><span class="label">1. Police concernée</span>
       <div class="list" role="radiogroup" aria-label="Police concernée">${ps.map(p => `
         <button class="row" role="radio" aria-checked="${f.policyId===p.id}" data-act="pickClaimPolicy" data-id="${p.id}">
@@ -602,7 +602,7 @@ S.claimNew = () => {
     ${err}
     <div class="col g10">
       <button class="btn btn-dark" data-act="claimAnalyse">${svg('chat',18,2)}Analyse préalable avec Alfred</button>
-      <button class="btn btn-primary btn-lg" data-act="claimSend">Envoyer la déclaration</button>
+      <button class="btn btn-primary btn-lg" data-act="claimSend">Nous transmettre la déclaration</button>
       <button class="btn btn-ghost" data-act="claimDraft">Enregistrer comme brouillon</button>
     </div>
     <p class="note" style="text-align:center">Version de test : la déclaration reste sur ce téléphone, rien n’est envoyé.</p>`;
@@ -621,6 +621,8 @@ S.claim = () => {
   return `
     <button class="back" data-act="back">${svg('back',18,2)}Sinistres</button>
     <div class="head-row"><div class="col g4"><span class="muted">${esc(p ? policyLabel(p) : 'Police supprimée')}</span><h1>${esc(c.type || 'Sinistre')}</h1></div><span class="pill ${st.c}">${st.l}</span></div>
+    ${c.status === 'sent' ? `<div class="banner">${svg('check',18,2)}<span>Votre déclaration nous est transmise. Un conseiller UnderControl vous répond et s’occupe de l’assureur pour vous.</span></div>` : ''}
+    ${c.status === 'received' || c.status === 'review' ? `<div class="banner">${svg('clock',18,2)}<span>Votre conseiller UnderControl suit le dossier. Vous voyez ici chaque étape.</span></div>` : ''}
     <div class="card" style="padding-block:6px"><dl class="kv">
       <div><dt>Date du sinistre</dt><dd>${fmtISO(c.date)}</dd></div>
       ${c.place ? `<div><dt>Lieu</dt><dd>${esc(c.place)}</dd></div>` : ''}
@@ -735,8 +737,8 @@ const A = {
   claimSend: () => {
     const e = validateClaim(ui.claim, true); if(e.length){ ui.claimErrors = e; render(); return; }
     const c = claimFromForm(); c.status = 'sent'; c.sentAt = Date.now();
-    c.history.push({at:Date.now(), label:'Déclaration envoyée à votre courtier'}); save(); ui.claimErrors = null;
-    ui.stack = [{screen:'claims', params:{}}]; go('claim', {id:c.id}, false); toast('Déclaration envoyée');
+    c.history.push({at:Date.now(), label:'Déclaration transmise à UnderControl'}); save(); ui.claimErrors = null;
+    ui.stack = [{screen:'claims', params:{}}]; go('claim', {id:c.id}, false); toast('Déclaration transmise');
   },
   openClaim: el => go('claim', {id: el.dataset.id}),
   editClaim: () => { const c = curClaim(); ui.claim = {id:c.id, policyId:c.policyId, type:c.type, date:c.date, place:c.place, amount:c.amount, desc:c.desc, files:c.files.slice()}; ui.claimErrors = null; go('claimNew'); },

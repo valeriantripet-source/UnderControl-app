@@ -16,7 +16,7 @@ Toutes vos assurances au même endroit. UnderControl rassemble les polices d'un 
 | Ajouter une police | Demande par assureur + n° avec mandat, ou import PDF / photo | L'envoi de la demande à l'assureur (bouton « Simuler la réception ») |
 | Bilan | Lacunes classées par niveau de risque, doublons possibles, références légales, 3 questions de situation | La lecture des documents article par article |
 | Comparatif | Enregistrement d'une demande de comparatif | Les offres |
-| Sinistres | Déclaration sur une police enregistrée (risque concerné, date, lieu, montant, description, photos et justificatifs), brouillon, suivi et historique | L'envoi au courtier et les étapes chez l'assureur (bouton « Simuler l'étape suivante ») |
+| Sinistres | Déclaration sur une police enregistrée (risque concerné, date, lieu, montant, description, photos et justificatifs), brouillon, suivi et historique | La transmission à UnderControl et les étapes de traitement (bouton « Simuler l'étape suivante ») |
 | Analyse préalable | Alfred liste les justificatifs à joindre et les points d'attention selon le type de sinistre | La lecture des conditions de la police |
 | Assistant (Alfred) | Interface de conversation, analyses préalables des sinistres | Les réponses libres |
 | Profil | Compte, statistiques, réglages de l'intro, déconnexion, effacement des données | — |
