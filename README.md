@@ -16,7 +16,9 @@ Toutes vos assurances au même endroit. UnderControl rassemble les polices d'un 
 | Ajouter une police | Demande par assureur + n° avec mandat, ou import PDF / photo | L'envoi de la demande à l'assureur (bouton « Simuler la réception ») |
 | Bilan | Lacunes classées par niveau de risque, doublons possibles, références légales, 3 questions de situation | La lecture des documents article par article |
 | Comparatif | Enregistrement d'une demande de comparatif | Les offres |
-| Assistant (Alfred) | Interface de conversation | Les réponses |
+| Sinistres | Déclaration sur une police enregistrée (risque concerné, date, lieu, montant, description, photos et justificatifs), brouillon, suivi et historique | L'envoi au courtier et les étapes chez l'assureur (bouton « Simuler l'étape suivante ») |
+| Analyse préalable | Alfred liste les justificatifs à joindre et les points d'attention selon le type de sinistre | La lecture des conditions de la police |
+| Assistant (Alfred) | Interface de conversation, analyses préalables des sinistres | Les réponses libres |
 | Profil | Compte, statistiques, réglages de l'intro, déconnexion, effacement des données | — |
 
 ## Structure
@@ -44,8 +46,8 @@ L'intro et son son se désactivent dans le profil. Avec le réglage système « 
 
 ## Stockage local
 
-- Compte, polices, réponses du bilan, demandes et conversation : `localStorage`, clé `undercontrol-mvp-v1`.
-- Documents importés (PDF, photos) : IndexedDB, base `undercontrol-mvp`.
+- Compte, polices, sinistres, réponses du bilan, demandes et conversation : `localStorage`, clé `undercontrol-mvp-v1`.
+- Documents importés (polices, photos et justificatifs de sinistre) : IndexedDB, base `undercontrol-mvp`.
 - Le mot de passe n'est pas stocké en clair : seule une empreinte SHA-256 est gardée. C'est suffisant pour un test, pas pour une vraie app.
 
 Les données sont propres à chaque navigateur et à chaque appareil. Effacer les données du site ou utiliser « Effacer toutes mes données » dans le profil remet l'app à zéro.

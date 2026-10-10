@@ -1,6 +1,6 @@
 /* ---------- Données et mémoire locale ---------- */
 const KEY = 'undercontrol-mvp-v1';
-const blank = () => ({ user:null, session:false, onboarded:false, policies:[], profile:{owner:null, vehicle:null, employed:null}, requests:[], chat:[], settings:{intro:true, introSound:true} });
+const blank = () => ({ user:null, session:false, onboarded:false, policies:[], profile:{owner:null, vehicle:null, employed:null}, requests:[], chat:[], claims:[], settings:{intro:true, introSound:true} });
 let storageOK = true;
 try { localStorage.setItem(KEY+'-test','1'); localStorage.removeItem(KEY+'-test'); } catch(e){ storageOK = false; }
 function load(){
@@ -63,7 +63,8 @@ const I = {
   clip:'<path d="M20 11.5l-8 8a5 5 0 0 1-7-7l8.5-8.5a3.5 3.5 0 0 1 5 5L10 17.5a2 2 0 0 1-3-3l7.5-7.5"/>',
   send:'<path d="M5 12h14M13 6l6 6-6 6"/>',
   trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
-  idcard:'<rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="9" cy="12" r="2"/><path d="M14 11h4M14 14h3"/>'
+  idcard:'<rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="9" cy="12" r="2"/><path d="M14 11h4M14 14h3"/>',
+  alert:'<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/>'
 };
 const svg = (n, s=20, w=1.8) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -109,7 +110,7 @@ function analyse(){
   if(pr.owner && !has('batiment').length) gap('batiment','high','Bâtiment non assuré','Dans la plupart des cantons, l’assurance bâtiment est obligatoire, auprès de l’établissement cantonal ou d’un assureur privé selon le canton.','Loi cantonale');
   if(!has('pj').length) gap('pj','med','Pas de protection juridique','Un litige avec un employeur, un bailleur ou après un accident de la route peut coûter des milliers de francs en frais d’avocat.', null);
   if(!has('vie').length) gap('vie','low','Pas de 3e pilier enregistré','Le 3e pilier lié complète la retraite, et les versements sont déductibles du revenu imposable dans les limites fixées chaque année.','OPP 3 art. 7');
-  ['menage','pj','voyage'].forEach(r => { const n = has(r).length; if(n > 1) items.push({k:'dup', sev:'med', risk:r, t:`${n} polices ${R(r).label.toLowerCase()}`, p:'Elles couvrent peut-être les mêmes personnes et les mêmes risques. Comparez-les avant la prochaine échéance.', ref:null}); });
+  ['menage','pj','voyage'].forEach(r => { const n = has(r).length; if(n > 1) items.push({k:'dup', sev:'med', risk:r, t:`${n} polices « ${R(r).label} »`, p:'Elles couvrent peut-être les mêmes personnes et les mêmes risques. Comparez-les avant la prochaine échéance.', ref:null}); });
   if(pr.employed && has('maladie').length) items.push({k:'dup', sev:'med', risk:'maladie', t:'Accidents peut-être payés deux fois', p:'Si vous travaillez au moins 8 heures par semaine chez le même employeur, son assurance accidents vous couvre. La couverture accidents de votre assurance maladie peut alors être suspendue.', ref:'LAMal art. 8 · LAA art. 1a'});
   const order = {high:0, med:1, low:2};
   items.sort((a,b) => order[a.sev] - order[b.sev]);
@@ -334,6 +335,7 @@ S.policy = () => {
       </dl>
     </div>
     ${state}
+    <button class="btn btn-secondary" data-act="newClaim" data-policy="${p.id}">${svg('alert',18)}Annoncer un sinistre sur cette police</button>
     <details class="card"${!p.insurer ? ' open' : ''}>
       <summary>Modifier l’assureur ou le numéro</summary>
       <form class="col g10" data-submit="savePolicy" novalidate>
@@ -353,7 +355,7 @@ S.assistant = () => {
   const n = data.policies.length;
   const msgs = data.chat.map(m => m.who === 'me'
     ? `<div class="bubble me">${esc(m.text)}</div>`
-    : `<div class="bubble bot"><p>${esc(m.text)}</p>${m.act==='bilan' ? `<button class="btn btn-dark btn-sm" style="width:100%" data-act="tab" data-s="bilan">Ouvrir le bilan</button>` : ''}</div>`).join('');
+    : `<div class="bubble bot"><p>${esc(m.text)}</p>${m.act==='bilan' ? `<button class="btn btn-dark btn-sm" style="width:100%" data-act="tab" data-s="bilan">Ouvrir le bilan</button>` : ''}${m.act==='claim' && data.claims.some(c => c.id === m.id) ? `<button class="btn btn-dark btn-sm" style="width:100%" data-act="openClaim" data-id="${m.id}">Ouvrir la déclaration</button>` : ''}</div>`).join('');
   return `
     <header class="chat-head"><span class="logo" style="width:40px;height:40px;border-radius:12px">${svg('chat',20,1.9)}</span>
       <div class="col"><h1 class="sm">Alfred - Votre assistant</h1><span class="note">Version de test : pas encore connecté</span></div></header>
@@ -443,6 +445,7 @@ S.profil = () => {
     <div class="list">
       <div class="row" style="min-height:48px"><span class="row-main">Polices</span><strong>${ps.length}</strong></div>
       <div class="row" style="min-height:48px"><span class="row-main">Documents reçus</span><strong>${rec}</strong></div>
+      <div class="row" style="min-height:48px"><span class="row-main">Sinistres déclarés</span><strong>${data.claims.length}</strong></div>
       <div class="row" style="min-height:48px"><span class="row-main">Demandes de comparatif</span><strong>${data.requests.length}</strong></div>
     </div>
     <section class="card" style="gap:10px">
@@ -460,14 +463,214 @@ S.profil = () => {
       : `<button class="btn btn-ghost danger" data-act="askErase">${svg('trash',18)}Effacer toutes mes données</button>`}`;
 };
 
-const TABS = [['home','Polices','doc'],['assistant','Assistant','chat'],['bilan','Bilan','shield'],['profil','Profil','user']];
-const TAB_OF = {home:'home', add:'home', policy:'home', assistant:'assistant', bilan:'bilan', compare:'bilan', profil:'profil'};
+/* ---------- Sinistres ---------- */
+const EVENTS = {
+  menage:['Vol par effraction','Vol simple (hors du domicile)','Dégât d’eau','Incendie','Bris de glace','Dommage causé à un tiers (RC)','Dommages naturels (grêle, tempête)','Autre'],
+  vehicule:['Collision','Stationnement / dommage de parking','Vol','Bris de glace','Grêle','Dommage causé à un tiers (RC)','Autre'],
+  maladie:['Maladie','Accident','Autre'],
+  batiment:['Dégât d’eau','Incendie','Dommages naturels (grêle, tempête)','Bris de glace','Autre'],
+  pj:['Litige avec un employeur','Litige avec un bailleur','Litige après un accident de la route','Litige de consommation','Autre'],
+  vie:['Décès','Incapacité de gain','Autre'],
+  voyage:['Annulation de voyage','Bagages perdus ou volés','Frais médicaux à l’étranger','Rapatriement','Autre'],
+  autre:['Autre']
+};
+const CLAIM_ST = {draft:{l:'Brouillon',c:'warn'}, sent:{l:'Envoyé',c:'req'}, received:{l:'Chez l’assureur',c:'req'}, review:{l:'En examen',c:'req'}, closed:{l:'Clos',c:'ok'}};
+const CLAIM_NEXT = {sent:['received','Transmis à l’assureur par votre courtier'], received:['review','En cours d’examen par l’assureur'], review:['closed','Sinistre clos : décision de l’assureur reçue']};
+const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; };
+const fmtISO = s => s ? s.split('-').reverse().join('.') : '—';
+const hhmm = t => { const d = new Date(t); return `${z(d.getHours())}:${z(d.getMinutes())}`; };
+const chf = v => { const n = parseFloat(String(v).replace(/[^\d.,]/g,'').replace(',','.')); return isNaN(n) ? String(v) : 'CHF ' + Math.round(n).toLocaleString('fr-CH').replace(/ |\s/g,"'"); };
+const policyLabel = p => `${R(p.risk).label}${p.insurer ? ' · ' + p.insurer : ''}`;
+const curClaim = () => data.claims.find(x => x.id === ui.params.id);
+
+function newClaimDraft(policyId){
+  return { id:uid(), policyId: policyId || (data.policies.length === 1 ? data.policies[0].id : null), type:'', date:todayISO(), place:'', amount:'', desc:'', files:[] };
+}
+function claimFromForm(){
+  const f = ui.claim; const now = Date.now();
+  let c = data.claims.find(x => x.id === f.id);
+  if(!c){ c = {id:f.id, createdAt:now, status:'draft', history:[{at:now, label:'Déclaration commencée'}]}; data.claims.push(c); }
+  Object.assign(c, {policyId:f.policyId, type:f.type, date:f.date, place:f.place.trim(), amount:f.amount.trim(), desc:f.desc.trim(), files:f.files.slice()});
+  return c;
+}
+function validateClaim(f, forSend){
+  const e = [];
+  if(!f.policyId) e.push('Choisissez la police concernée.');
+  if(!f.type) e.push('Choisissez le risque concerné.');
+  if(!f.date) e.push('Indiquez la date du sinistre.');
+  else if(f.date > todayISO()) e.push('La date ne peut pas être dans le futur.');
+  if(forSend && f.desc.trim().length < 10) e.push('Décrivez ce qui s’est passé en quelques phrases.');
+  return e;
+}
+/* Analyse préalable par règles simples, en attendant qu'Alfred lise vraiment les polices */
+function preAnalysis(c){
+  const p = data.policies.find(x => x.id === c.policyId);
+  const t = (c.type || '').toLowerCase(); const need = []; const tips = []; const out = [];
+  const days = Math.max(0, Math.round((Date.parse(todayISO()) - Date.parse(c.date)) / 864e5));
+  out.push(`Analyse préalable · ${c.type}, ${fmtISO(c.date)}`, '');
+  if(!p) out.push('• La police liée à ce sinistre a été supprimée : choisissez-en une autre.');
+  else if(statusOf(p) !== 'received') out.push(`• Je n’ai pas encore le document de votre police « ${R(p.risk).label} » : je ne peux pas vérifier la couverture. Importez-la ou demandez-la depuis Mes polices.`);
+  else out.push(`• Police « ${R(p.risk).label} »${p.insurer ? ' chez ' + p.insurer : ''} : document reçu. La vérification article par article arrivera dans la prochaine version.`);
+  out.push(days > 30
+    ? `• Le sinistre date de ${days} jours : annoncez-le sans attendre. La loi demande d’aviser l’assureur dès que vous en avez connaissance (LCA art. 38).`
+    : '• Annoncez-le rapidement : la loi demande d’aviser l’assureur dès que vous en avez connaissance (LCA art. 38).');
+  if(t.includes('vol')){ need.push('le récépissé de votre plainte à la police', 'la liste des objets avec factures ou photos'); if(t.includes('simple')) tips.push('Le vol simple hors du domicile n’est couvert que si l’option figure dans votre police.'); }
+  if(t.includes('eau')){ need.push('des photos des dégâts', 'le devis ou la facture de réparation'); tips.push('Si vous êtes locataire, prévenez aussi votre régie.'); }
+  if(t.includes('incendie')) need.push('des photos', 'le rapport des pompiers s’ils sont intervenus');
+  if(t.includes('bris')){ need.push('des photos', 'le devis de remplacement'); tips.push('Le bris de glaces est souvent une option : vérifiez qu’elle est incluse.'); }
+  if(t.includes('tiers')){ need.push('les coordonnées de la personne lésée', 'des photos du dommage'); tips.push('Ne reconnaissez pas votre responsabilité et ne promettez pas de payer avant l’accord de l’assureur.'); }
+  if(t.includes('naturels') || t.includes('grêle')) need.push('des photos datées', 'le lieu exact');
+  if(t.includes('collision') || t.includes('stationnement')){ need.push('le constat européen d’accident signé par les deux conducteurs', 'des photos des véhicules'); tips.push('En cas de blessés, la police doit être appelée.'); }
+  if(t === 'accident'){ need.push('les factures médicales'); if(data.profile.employed) tips.push('Vous travaillez au moins 8 h par semaine : l’accident se déclare d’abord à votre employeur, qui l’annonce à son assureur accidents.'); }
+  if(t === 'maladie') need.push('les factures médicales et les ordonnances');
+  if(p && p.risk === 'pj') tips.push('Annoncez le litige avant de mandater un avocat : l’assureur doit en général donner son accord.');
+  if(t.includes('annulation')) need.push('la confirmation de réservation', 'le certificat médical ou la preuve de l’empêchement', 'la facture des frais d’annulation');
+  if(t.includes('bagages')) need.push('l’attestation de perte de la compagnie de transport');
+  if(t.includes('étranger') || t.includes('rapatriement')) need.push('les factures médicales de l’étranger');
+  if(!need.length) need.push('des photos ou des documents qui montrent ce qui s’est passé');
+  out.push(`• À joindre : ${[...new Set(need)].join(', ')}.`);
+  tips.forEach(x => out.push('• ' + x));
+  if(!c.files.length) out.push('• Aucun justificatif pour l’instant : ajoutez au moins une photo ou un document.');
+  else out.push(`• ${plural(c.files.length, 'justificatif joint', 'justificatifs joints')}.`);
+  if(c.amount) out.push(`• Montant estimé : ${chf(c.amount)}. S’il est proche de votre franchise, la déclaration n’est peut-être pas utile : votre courtier peut vous le dire.`);
+  if((c.desc || '').length < 40) out.push('• Décrivez plus précisément les circonstances : où, quand, comment.');
+  out.push('', 'Analyse automatique de la version de test, à confirmer par votre courtier.');
+  return out.join('\n');
+}
+const thumbsHTML = (files, editable) => `<div class="thumbs">${files.map(x => `
+  <div class="thumb" data-key="${esc(x.key)}" data-type="${esc(x.type)}"><span class="thumb-name">${esc(x.name)}</span>${editable ? `<button class="thumb-del" data-act="delClaimFile" data-key="${esc(x.key)}" aria-label="Retirer ${esc(x.name)}">${svg('trash',16)}</button>` : ''}</div>`).join('')}</div>`;
+
+S.claims = () => {
+  const list = data.claims.slice().sort((a,b) => (b.date||'').localeCompare(a.date||'') || b.createdAt - a.createdAt);
+  const open = list.filter(c => c.status !== 'closed'), done = list.filter(c => c.status === 'closed');
+  const row = c => { const p = data.policies.find(x => x.id === c.policyId); const st = CLAIM_ST[c.status]; return `
+    <button class="row" data-act="openClaim" data-id="${c.id}">
+      <span class="ico ${c.status==='draft'?'warn':''}">${svg(R(p ? p.risk : 'autre').icon)}</span>
+      <span class="row-main"><span class="row-title">${esc(c.type || 'Sinistre')}</span><span class="row-sub">${esc(fmtISO(c.date))} · ${esc(p ? policyLabel(p) : 'Police supprimée')}</span></span>
+      <span class="pill ${st.c}">${st.l}</span>
+    </button>`; };
+  return `
+    <div class="head-row">
+      <div><div class="muted">Suivi et historique</div><h1>Sinistres</h1></div>
+      <button class="icon-btn primary" data-act="newClaim" aria-label="Annoncer un sinistre">${svg('plus',20,2.2)}</button>
+    </div>
+    ${list.length ? '' : `<div class="card"><h2 class="sm">Aucun sinistre</h2><p class="small" style="color:var(--ink-2)">Vol, dégât d’eau, accident : annoncez-le ici. Alfred vous dit quoi joindre, puis la déclaration part chez votre courtier.</p><button class="btn btn-primary" data-act="newClaim">${svg('alert',18)}Annoncer un sinistre</button></div>`}
+    ${open.length ? `<h2>En cours</h2><div class="list">${open.map(row).join('')}</div>` : ''}
+    ${done.length ? `<h2>Historique</h2><div class="list">${done.map(row).join('')}</div>` : ''}`;
+};
+
+S.claimNew = () => {
+  const f = ui.claim || (ui.claim = newClaimDraft());
+  const ps = sorted();
+  if(!ps.length) return `
+    <button class="back" data-act="back">${svg('back',18,2)}Sinistres</button>
+    <h1>Annoncer un sinistre</h1>
+    <div class="card"><h2 class="sm">Ajoutez d’abord une police</h2><p class="small" style="color:var(--ink-2)">Un sinistre se déclare sur une de vos polices. Ajoutez celle qui est concernée, même sans le document.</p>
+      <button class="btn btn-primary" data-act="goAdd">${svg('plus',18,2.2)}Ajouter une police</button></div>`;
+  const pol = data.policies.find(x => x.id === f.policyId);
+  const types = pol ? (EVENTS[pol.risk] || EVENTS.autre) : [];
+  const err = ui.claimErrors && ui.claimErrors.length ? `<div class="banner warn" role="alert">${svg('info',18,2)}<span>${ui.claimErrors.map(esc).join('<br>')}</span></div>` : '';
+  const editing = data.claims.some(c => c.id === f.id);
+  return `
+    <button class="back" data-act="back">${svg('back',18,2)}${editing ? 'Retour' : 'Sinistres'}</button>
+    <div class="col g8"><h1>${editing ? 'Compléter la déclaration' : 'Annoncer un sinistre'}</h1><p class="lede">Les informations de base suffisent. Alfred vous dit ensuite ce qu’il faut joindre.</p></div>
+    <section class="col g8"><span class="label">1. Police concernée</span>
+      <div class="list" role="radiogroup" aria-label="Police concernée">${ps.map(p => `
+        <button class="row" role="radio" aria-checked="${f.policyId===p.id}" data-act="pickClaimPolicy" data-id="${p.id}">
+          <span class="ico">${svg(R(p.risk).icon)}</span>
+          <span class="row-main"><span class="row-title">${esc(R(p.risk).label)}</span><span class="row-sub">${esc(subOf(p))}</span></span>
+          <span class="radio" aria-hidden="true"></span>
+        </button>`).join('')}</div>
+    </section>
+    <section class="card"><span class="label">2. Ce qui s’est passé</span>
+      <div class="field"><label for="cl-type">Risque concerné</label>
+        <select id="cl-type" class="input" data-bind="claim.type"${pol ? '' : ' disabled'}><option value="">${pol ? 'Choisir…' : 'Choisissez d’abord la police'}</option>${types.map(t => `<option${t===f.type?' selected':''}>${esc(t)}</option>`).join('')}</select></div>
+      <div class="grid2">
+        <div class="field"><label for="cl-date">Date du sinistre</label><input id="cl-date" type="date" class="input" max="${todayISO()}" value="${esc(f.date)}" data-bind="claim.date"></div>
+        <div class="field"><label for="cl-amount">Montant estimé (CHF)</label><input id="cl-amount" class="input" inputmode="decimal" placeholder="Facultatif" value="${esc(f.amount)}" data-bind="claim.amount" autocomplete="off"></div>
+      </div>
+      <div class="field"><label for="cl-place">Lieu</label><input id="cl-place" class="input" placeholder="Ex. Gare de Morges" value="${esc(f.place)}" data-bind="claim.place" autocomplete="off"></div>
+      <div class="field"><label for="cl-desc">Description des événements</label><textarea id="cl-desc" class="input" rows="5" placeholder="Que s’est-il passé ? Où, quand, comment, qui était présent ?" data-bind="claim.desc">${esc(f.desc)}</textarea></div>
+    </section>
+    <section class="card"><span class="label">3. Photos et justificatifs</span>
+      ${f.files.length ? thumbsHTML(f.files, true) : `<p class="small" style="color:var(--muted)">Photos des dégâts, factures, plainte, constat…</p>`}
+      <div class="btns" style="justify-content:flex-start">
+        <label class="btn btn-secondary btn-sm file-label"><input type="file" class="sr" accept="application/pdf,image/*" multiple data-file="claim">Ajouter des fichiers</label>
+        <label class="btn btn-secondary btn-sm file-label"><input type="file" class="sr" accept="image/*" capture="environment" data-file="claim">Prendre une photo</label>
+      </div>
+    </section>
+    ${err}
+    <div class="col g10">
+      <button class="btn btn-dark" data-act="claimAnalyse">${svg('chat',18,2)}Analyse préalable avec Alfred</button>
+      <button class="btn btn-primary btn-lg" data-act="claimSend">Envoyer la déclaration</button>
+      <button class="btn btn-ghost" data-act="claimDraft">Enregistrer comme brouillon</button>
+    </div>
+    <p class="note" style="text-align:center">Version de test : la déclaration reste sur ce téléphone, rien n’est envoyé.</p>`;
+};
+
+S.claim = () => {
+  const c = curClaim();
+  if(!c) return `<button class="back" data-act="back">${svg('back',18,2)}Sinistres</button><p>Ce sinistre n’existe plus.</p>`;
+  const p = data.policies.find(x => x.id === c.policyId); const st = CLAIM_ST[c.status];
+  const actions = c.status === 'draft' ? `
+      <button class="btn btn-primary btn-lg" data-act="editClaim">Compléter et envoyer</button>
+      <button class="btn btn-dark" data-act="claimAnalyseSaved">${svg('chat',18,2)}Analyse préalable avec Alfred</button>`
+    : `
+      <button class="btn btn-dark" data-act="claimAnalyseSaved">${svg('chat',18,2)}${c.status === 'closed' ? 'Revoir l’analyse avec Alfred' : 'Demander à Alfred'}</button>
+      ${CLAIM_NEXT[c.status] ? `<button class="btn btn-secondary" data-act="claimAdvance">Simuler l’étape suivante</button>` : ''}`;
+  return `
+    <button class="back" data-act="back">${svg('back',18,2)}Sinistres</button>
+    <div class="head-row"><div class="col g4"><span class="muted">${esc(p ? policyLabel(p) : 'Police supprimée')}</span><h1>${esc(c.type || 'Sinistre')}</h1></div><span class="pill ${st.c}">${st.l}</span></div>
+    <div class="card" style="padding-block:6px"><dl class="kv">
+      <div><dt>Date du sinistre</dt><dd>${fmtISO(c.date)}</dd></div>
+      ${c.place ? `<div><dt>Lieu</dt><dd>${esc(c.place)}</dd></div>` : ''}
+      ${c.amount ? `<div><dt>Montant estimé</dt><dd>${esc(chf(c.amount))}</dd></div>` : ''}
+      <div><dt>Justificatifs</dt><dd>${c.files.length}</dd></div>
+    </dl></div>
+    <section class="card"><h2 class="sm">Description</h2><p style="white-space:pre-line;color:var(--ink-2);font-size:14px;overflow-wrap:anywhere">${esc(c.desc || '—')}</p></section>
+    ${c.files.length ? `<section class="card"><h2 class="sm">Photos et justificatifs</h2>${thumbsHTML(c.files, false)}</section>` : ''}
+    <section class="card"><h2 class="sm">Suivi</h2>
+      <ol class="track-list">${c.history.slice().reverse().map((h,i) => `<li class="${i===0?'now':''}"><span class="dot" aria-hidden="true"></span><span class="col"><span>${esc(h.label)}</span><span class="note">${fmt(h.at)} à ${hhmm(h.at)}</span></span></li>`).join('')}</ol>
+    </section>
+    <div class="col g10">${actions}</div>
+    ${c.status !== 'draft' ? `<p class="note">Version de test : la déclaration n’est pas réellement envoyée. « Simuler l’étape suivante » montre le suivi tel qu’il apparaîtra.</p>` : ''}
+    ${c.status === 'draft' ? (ui.confirmDel ? `
+      <div class="card danger"><strong>Supprimer ce brouillon ?</strong><p class="small">La déclaration et ses justificatifs seront effacés de ce téléphone.</p>
+        <div class="grid2"><button class="btn btn-secondary" data-act="cancelDel">Annuler</button><button class="btn btn-danger" data-act="doDelClaim">Supprimer</button></div></div>`
+      : `<button class="btn btn-ghost danger" data-act="askDel">${svg('trash',18)}Supprimer le brouillon</button>`) : ''}`;
+};
+async function loadThumbs(){
+  for(const el of document.querySelectorAll('.thumb[data-key]')){
+    if(!String(el.dataset.type).startsWith('image/')) continue;
+    try { const blob = await getFile(el.dataset.key); if(blob && el.isConnected){ const img = new Image(); img.alt = ''; img.src = URL.createObjectURL(blob); el.prepend(img); } } catch(e){}
+  }
+}
+async function handleClaimFiles(input){
+  const files = [...(input.files || [])]; let added = 0;
+  for(const file of files){
+    if(file.size > 15e6){ toast(`${file.name} dépasse 15 Mo.`); continue; }
+    const key = `${ui.claim.id}:${uid()}`;
+    try { await putFile(key, file); } catch(e){ toast('Un fichier n’a pas pu être enregistré sur ce téléphone.'); continue; }
+    ui.claim.files.push({key, name:file.name || 'Photo', type:file.type, size:file.size}); added++;
+  }
+  render(); if(added) toast(plural(added, 'fichier ajouté', 'fichiers ajoutés'));
+}
+function sendToAlfred(c){
+  c.history.push({at:Date.now(), label:'Analyse préalable demandée à Alfred'});
+  data.chat.push({who:'me', text:`Analyse préalable de mon sinistre : ${c.type}, ${fmtISO(c.date)}.`});
+  data.chat.push({who:'bot', text:preAnalysis(c), act:'claim', id:c.id});
+  save(); tab('assistant');
+}
+
+const TABS = [['home','Polices','doc'],['claims','Sinistres','alert'],['assistant','Assistant','chat'],['bilan','Bilan','shield'],['profil','Profil','user']];
+const TAB_OF = {home:'home', add:'home', policy:'home', claims:'claims', claimNew:'claims', claim:'claims', assistant:'assistant', bilan:'bilan', compare:'bilan', profil:'profil'};
 function render(){
   const s = ui.screen; const t = TAB_OF[s];
   document.getElementById('app').innerHTML = `<main class="screen${t?'':' no-tabs'}">${S[s]()}</main>` + (t ? `
     <nav class="tabbar" aria-label="Navigation principale"><div class="tabbar-in">${TABS.map(([id,l,ic]) =>
       `<button class="tab" data-act="tab" data-s="${id}"${t===id?' aria-current="page"':''}>${svg(ic,22)}${l}</button>`).join('')}</div></nav>` : '');
   if(s === 'policy') loadPreview();
+  if(s === 'claimNew' || s === 'claim') loadThumbs();
   if(s === 'assistant' && data.chat.length) window.scrollTo(0, document.body.scrollHeight);
 }
 async function loadPreview(){
@@ -512,7 +715,34 @@ const A = {
   askErase: () => { ui.confirmErase = true; render(); },
   cancelErase: () => { ui.confirmErase = false; render(); },
   erase: async () => { await eraseAll(); ui.stack = []; go('welcome', {}, false); toast('Données effacées'); },
-  replayIntro: () => { if(window.UCIntro) UCIntro.start({ sound: data.settings.introSound, fromTap: true }); }
+  replayIntro: () => { if(window.UCIntro) UCIntro.start({ sound: data.settings.introSound, fromTap: true }); },
+  newClaim: el => { ui.claim = newClaimDraft(el.dataset.policy); ui.claimErrors = null; go('claimNew'); },
+  pickClaimPolicy: el => {
+    ui.claim.policyId = el.dataset.id; const p = data.policies.find(x => x.id === el.dataset.id);
+    if(!(EVENTS[p.risk] || EVENTS.autre).includes(ui.claim.type)) ui.claim.type = '';
+    ui.claimErrors = null; render();
+  },
+  delClaimFile: async el => { await delFile(el.dataset.key); ui.claim.files = ui.claim.files.filter(x => x.key !== el.dataset.key); render(); },
+  claimDraft: () => {
+    if(!ui.claim.policyId){ ui.claimErrors = ['Choisissez la police concernée.']; render(); return; }
+    const c = claimFromForm(); save(); ui.claimErrors = null;
+    ui.stack = [{screen:'claims', params:{}}]; go('claim', {id:c.id}, false); toast('Brouillon enregistré');
+  },
+  claimAnalyse: () => {
+    const e = validateClaim(ui.claim, false); if(e.length){ ui.claimErrors = e; render(); return; }
+    ui.claimErrors = null; sendToAlfred(claimFromForm());
+  },
+  claimSend: () => {
+    const e = validateClaim(ui.claim, true); if(e.length){ ui.claimErrors = e; render(); return; }
+    const c = claimFromForm(); c.status = 'sent'; c.sentAt = Date.now();
+    c.history.push({at:Date.now(), label:'Déclaration envoyée à votre courtier'}); save(); ui.claimErrors = null;
+    ui.stack = [{screen:'claims', params:{}}]; go('claim', {id:c.id}, false); toast('Déclaration envoyée');
+  },
+  openClaim: el => go('claim', {id: el.dataset.id}),
+  editClaim: () => { const c = curClaim(); ui.claim = {id:c.id, policyId:c.policyId, type:c.type, date:c.date, place:c.place, amount:c.amount, desc:c.desc, files:c.files.slice()}; ui.claimErrors = null; go('claimNew'); },
+  claimAnalyseSaved: () => sendToAlfred(curClaim()),
+  claimAdvance: () => { const c = curClaim(); const n = CLAIM_NEXT[c.status]; if(!n) return; c.status = n[0]; c.history.push({at:Date.now(), label:n[1]}); save(); render(); toast(CLAIM_ST[c.status].l); },
+  doDelClaim: async () => { const c = curClaim(); for(const f of c.files) await delFile(f.key); data.claims = data.claims.filter(x => x.id !== c.id); save(); tab('claims'); toast('Brouillon supprimé'); }
 };
 const cur = () => data.policies.find(x => x.id === ui.params.id);
 async function eraseAll(){ try { localStorage.removeItem(KEY); } catch(e){} await clearFiles(); data = blank(); }
@@ -567,6 +797,7 @@ function sendChat(q){
   }, 450);
 }
 async function handleFile(input){
+  if(input.dataset.file === 'claim') return handleClaimFiles(input);
   const file = input.files && input.files[0]; if(!file) return;
   if(file.size > 15e6){ toast('Ce fichier dépasse 15 Mo.'); input.value = ''; return; }
   let p;

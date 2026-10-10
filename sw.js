@@ -1,6 +1,6 @@
 // Service worker : garde l'app disponible hors ligne.
 // Changez la version à chaque mise à jour pour forcer le rafraîchissement.
-const CACHE = 'undercontrol-v2';
+const CACHE = 'undercontrol-v3';
 const SHELL = ['./', 'index.html', 'styles.css', 'intro.js', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png', 'sons/souffle.wav', 'sons/cadenas-grave.wav'];
 
 self.addEventListener('install', e => {
