@@ -1,10 +1,10 @@
 /* ---------- Données et mémoire locale ---------- */
 const KEY = 'undercontrol-mvp-v1';
-const blank = () => ({ user:null, session:false, onboarded:false, policies:[], profile:{owner:null, vehicle:null, employed:null}, requests:[], chat:[] });
+const blank = () => ({ user:null, session:false, onboarded:false, policies:[], profile:{owner:null, vehicle:null, employed:null}, requests:[], chat:[], settings:{intro:true, introSound:true} });
 let storageOK = true;
 try { localStorage.setItem(KEY+'-test','1'); localStorage.removeItem(KEY+'-test'); } catch(e){ storageOK = false; }
 function load(){
-  try { const s = localStorage.getItem(KEY); if(!s) return blank(); const d = Object.assign(blank(), JSON.parse(s)); d.profile = Object.assign(blank().profile, d.profile||{}); return d; }
+  try { const s = localStorage.getItem(KEY); if(!s) return blank(); const d = Object.assign(blank(), JSON.parse(s)); d.profile = Object.assign(blank().profile, d.profile||{}); d.settings = Object.assign(blank().settings, d.settings||{}); return d; }
   catch(e){ return blank(); }
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(data)); } catch(e){ storageOK = false; } }
@@ -140,7 +140,7 @@ const storageBanner = () => storageOK ? '' : `<div class="banner warn">${svg('in
 const S = {};
 
 S.welcome = () => `
-  <div class="brand"><span class="logo">${svg('shield',20,2)}</span><span class="brand-name">UnderControl</span></div>
+  <div class="brand">${window.UCMark ? UCMark(36) : ''}<span class="brand-name"><span class="w5">Under</span>Control</span></div>
   <div class="stack" aria-hidden="true">
     <div class="s1"></div><div class="s2"></div>
     <div class="s3">
@@ -445,6 +445,13 @@ S.profil = () => {
       <div class="row" style="min-height:48px"><span class="row-main">Documents reçus</span><strong>${rec}</strong></div>
       <div class="row" style="min-height:48px"><span class="row-main">Demandes de comparatif</span><strong>${data.requests.length}</strong></div>
     </div>
+    <section class="card" style="gap:10px">
+      <div style="display:flex;gap:12px;align-items:center">${window.UCMark ? UCMark(32) : ''}<h2 class="sm">Intro au démarrage</h2></div>
+      <label class="check"><input type="checkbox" data-setting="intro"${data.settings.intro ? ' checked' : ''}><span>Jouer l’intro à l’ouverture de l’app</span></label>
+      <label class="check"><input type="checkbox" data-setting="introSound"${data.settings.introSound ? ' checked' : ''}><span>Avec le son (souffle et cadenas)</span></label>
+      <p class="note">À l’ouverture, le navigateur ne laisse souvent pas jouer le son. Il joue toujours avec « Revoir l’intro ».</p>
+      <button class="btn btn-secondary" data-act="replayIntro">Revoir l’intro</button>
+    </section>
     <div class="banner">${svg('info',18,2)}<span>Version de test : votre compte, vos polices et vos documents restent sur ce téléphone, dans ce navigateur. Rien n’est envoyé.</span></div>
     <button class="btn btn-secondary" data-act="logout">Se déconnecter</button>
     ${ui.confirmErase ? `
@@ -504,7 +511,8 @@ const A = {
   logout: () => { data.session = false; save(); ui.stack = []; ui.authVals = null; ui.authError = null; go('auth', {mode:'login'}, false); },
   askErase: () => { ui.confirmErase = true; render(); },
   cancelErase: () => { ui.confirmErase = false; render(); },
-  erase: async () => { await eraseAll(); ui.stack = []; go('welcome', {}, false); toast('Données effacées'); }
+  erase: async () => { await eraseAll(); ui.stack = []; go('welcome', {}, false); toast('Données effacées'); },
+  replayIntro: () => { if(window.UCIntro) UCIntro.start({ sound: data.settings.introSound, fromTap: true }); }
 };
 const cur = () => data.policies.find(x => x.id === ui.params.id);
 async function eraseAll(){ try { localStorage.removeItem(KEY); } catch(e){} await clearFiles(); data = blank(); }
@@ -580,11 +588,13 @@ function onField(e){
   if(t.matches('input[type=file][data-file]')){ if(e.type === 'change') handleFile(t); return; }
   if(t.dataset.row != null && ui.draft){ ui.draft[+t.dataset.row][t.dataset.field] = t.value; const b = document.getElementById('onb-go'); if(b) b.textContent = onbLabel(); }
   if(t.dataset.bind){ const path = t.dataset.bind.split('.'); let o = ui; while(path.length > 1) o = o[path.shift()]; o[path[0]] = t.type === 'checkbox' ? t.checked : t.value; }
+  if(t.dataset.setting && e.type === 'change'){ data.settings[t.dataset.setting] = t.checked; save(); }
 }
 document.addEventListener('input', onField);
 document.addEventListener('change', onField);
 
 /* ---------- Démarrage ---------- */
+if(window.UCIntro){ if(data.settings.intro) UCIntro.start({ sound: data.settings.introSound }); else UCIntro.hide(); }
 if(!data.user) go('welcome', {}, false);
 else if(!data.session) go('auth', {mode:'login'}, false);
 else if(!data.onboarded) startOnboard();

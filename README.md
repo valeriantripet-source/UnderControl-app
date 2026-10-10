@@ -8,6 +8,7 @@ Toutes vos assurances au même endroit. UnderControl rassemble les polices d'un 
 
 | Écran | Ce qui fonctionne | Simulé dans cette version |
 |---|---|---|
+| Intro | Logo animé au démarrage (souffle puis cadenas), réglable dans le profil | — |
 | Bienvenue | Présentation de l'app | — |
 | Identification | Création de compte (prénom, e-mail, mot de passe), connexion, déconnexion | SwissID, Apple, Google |
 | Vos polices | Saisie ligne par ligne (risque, assureur, n° de police), étape facultative | — |
@@ -16,20 +17,30 @@ Toutes vos assurances au même endroit. UnderControl rassemble les polices d'un 
 | Bilan | Lacunes classées par niveau de risque, doublons possibles, références légales, 3 questions de situation | La lecture des documents article par article |
 | Comparatif | Enregistrement d'une demande de comparatif | Les offres |
 | Assistant (Alfred) | Interface de conversation | Les réponses |
-| Profil | Compte, statistiques, déconnexion, effacement des données | — |
+| Profil | Compte, statistiques, réglages de l'intro, déconnexion, effacement des données | — |
 
 ## Structure
 
 ```
 index.html             Page de l'app
 styles.css             Styles (thème clair et sombre)
+intro.js               Intro animée au démarrage et symbole du logo
 app.js                 Logique : écrans, mémoire locale, bilan
+sons/                  Souffle et cadenas de l'intro
 manifest.webmanifest   Installation sur l'écran d'accueil
 sw.js                  Fonctionnement hors ligne
 icons/                 Icônes de l'app
 ```
 
 Aucune dépendance, aucune étape de build : ce sont des fichiers statiques.
+
+## Intro au démarrage
+
+À l'ouverture, le logo se dessine sur fond foncé : l'anneau avec un souffle de vent, puis le segment qui le ferme avec un bruit de cadenas, et le nom qui apparaît dessous. Un appui n'importe où passe l'intro.
+
+Les navigateurs bloquent souvent le son tant que la personne n'a pas touché l'écran : l'intro peut donc démarrer sans son à l'ouverture. Le bouton « Revoir l'intro » du profil la rejoue toujours avec le son. Dans une future app native, le son jouera dès l'ouverture.
+
+L'intro et son son se désactivent dans le profil. Avec le réglage système « réduire les animations », le logo s'affiche directement.
 
 ## Stockage local
 
